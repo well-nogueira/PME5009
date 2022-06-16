@@ -434,6 +434,11 @@
     A_Ca = [1];
     A_Cb = [0,0];
 
+    
+    AreordA = [A_Aaa, A_Aab; A_Aba, A_Abb]
+    AreordB = [A_Ba; A_Bb]
+    AreordC = [A_Ca, A_Cb]
+
 % A equação característica do observador para o sistema A será então:
     pr=[-1.5 -1.5];
     eqco = poly(pr);
@@ -466,7 +471,8 @@
     B_Ca = [1];
     B_Cb = [0,0];
 
-
+    BreordA = [B_Aaa, B_Aab; B_Aba, B_Abb]
+ 
 % A equação característica do observador para o sistema B será então:
     B_pr=[-1.2 -1.2];
     eqco = poly(B_pr);
@@ -598,10 +604,89 @@ sim('Exercicio_1e_sim',t_sim);
     hold off
 %%    
 %
-% # *vi) Projetar controlador para tornar a resposta ao derau mais rápida em malha fechada utilizando o método de alocação de polos e observador a sua escolha, avaliar sensibilidade da planta a escolha dos polos do controlador e observador*
-%   
+% # *vi) Projetar controlador para tornar a resposta ao degrau mais rápida em malha fechada utilizando o método de alocação de polos e observador a sua escolha, avaliar sensibilidade da planta a escolha dos polos do controlador e observador*
+% 
+% Para o sistema A:
+% Escoljha dos polos de MF do sistema:
+mp = 0.15; %sobressinal
+zeta = sqrt((log(mp)/pi)^2/((log(mp)/pi)^2+1)); %coeficiente de amortecimento
+t_assent = 15;   %tempo de assentamento
+wn = 4/(zeta*t_assent);
+    %zeta = 0.5169  wn = 0.5159
+s1 = -zeta*wn + j*wn*sqrt(1-zeta^2);
+s2 = -zeta*wn - j*wn*sqrt(1-zeta^2);
 
-%% *Exercício 2:*
-%
-% * *Sistema escolhido representado em espaço de estados:*
-%
+% Polo 5x mais rápido para aproximação para segunda ordem:
+s3 = - 1.35;
+
+p_mf = [s1, s2, s3];
+
+A_K_cntrl = acker(A,B, p_mf); %Ganhos do controlador para os polos desados para o sistema A
+% A_K_cntrl = -1.5685   -3.3935   -6.6148
+
+
+% Para o sistema B:
+% Escoljha dos polos de MF do sistema:
+mpB = 0.20; %sobressinal
+zetaB = sqrt((log(mpB)/pi)^2/((log(mpB)/pi)^2+1)); %coeficiente de amortecimento
+t_assentB = 20;   %tempo de assentamento
+wnB = 4/(zetaB*t_assentB);
+    %zeta = 0.4559  wn = 0.4386
+s1B = -zetaB*wnB + j*wnB*sqrt(1-zetaB^2);
+s2B = -zetaB*wnB - j*wnB*sqrt(1-zetaB^2);
+
+% Polo 5x mais rápido para aproximação para segunda ordem:
+s3B = - 1.2;
+
+p_mfB = [s1, s2, s3];
+
+B_K_cntrl = acker(A2,B2, p_mfB); %Ganhos do controlador para os polos desejados para o sistema A
+% B_K_cntrl = -1.4596    3.3011   25.9586
+
+
+% Adição do termo N para corrigir o erro em regime:
+N_termo_A1f = rscale(AreordA,AreordB,AreordC,D,A_K_cntrl)
+N_termo_B1f = rscale(Breord,B2,C2,D2,B_K_cntrl)
+
+
+t_sim = 100;
+sim('Exercicio_1f_sim',t_sim);
+
+% Resposta ao degrau melhorada do sistema A
+    figure;
+    subplot(211);
+    plot(OrdMinCntrl_step_resp_model1,'-black','LineWidth',1);
+    xlabel('tempo (s)');
+    ylabel('amplitude');
+    axis([0 t_sim -28.28636 24]);
+    title('SISTEMA A');
+    legend({'step resp model A'},'Location','southeast');
+    subplot(212);
+    plot(OrdMinCntrl_step_input,'-b','LineWidth',1.5);
+    axis([0 t_sim -1 1.5]);
+    title('Resposta ao degrau com controle');
+    xlabel('tempo (s)'); 
+    ylabel('amplitude'); 
+    title('Step Input');
+    legend({'step input'},'Location','southeast');
+
+% Resposta ao degrau melhorada do sistema B
+    figure;
+    subplot(211);
+    plot(OrdMinCntrl_step_resp_model2,'-black','LineWidth',1);
+    xlabel('tempo (s)');
+    ylabel('amplitude');
+    axis([0 t_sim -1.78414 2]);
+    title('SISTEMA B');
+    legend({'step resp model B'},'Location','southeast');
+    subplot(212);
+    plot(OrdMinCntrl_step_input,'-b','LineWidth',1.5);
+    axis([0 t_sim -1 1.5]);
+    title('Resposta ao degrau com controle');
+    xlabel('tempo (s)'); 
+    ylabel('amplitude'); 
+    title('Step Input');
+    legend({'step input'},'Location','southeast');
+    
+    
+% É possível notar que os sistemas atenderam os requisitos de controle 
